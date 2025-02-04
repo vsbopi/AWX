@@ -1,0 +1,29 @@
+---
+- name: Check Root Filesystem Utilization
+  hosts: all
+  become: yes
+  tasks:
+    - name: Gather root filesystem usage
+      command: df -h --output=pcent /
+      register: df_output
+
+    - name: Parse root filesystem usage
+      set_fact:
+        root_usage_str: "{{ df_output.stdout_lines[1] | regex_replace('\\s+', '') | regex_replace('%', '') }}"
+
+    - name: Debug parsed usage string
+      debug:
+        msg: "Parsed root filesystem usage string is {{ root_usage_str }}"
+
+    - name: Convert root usage to integer
+      set_fact:
+        root_usage: "{{ root_usage_str | int }}"
+
+    - name: Debug converted usage
+      debug:
+        msg: "Converted root filesystem usage is {{ root_usage }}"
+
+    - name: Fail if root filesystem is 80% or more
+      debug:
+        msg: "Root filesystem is {{ root_usage }}% full!"
+      when: root_usage | int >= 80
